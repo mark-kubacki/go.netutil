@@ -1,6 +1,6 @@
 // Package idletracker contains a context that is done if a server
 // has not had active (stream) connections for some time.
-package idletracker // import "github.com/wmark/idletracker"
+package idletracker
 
 import (
 	"context"

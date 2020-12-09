@@ -31,7 +31,7 @@ type IdleTracker struct {
 	patience time.Duration
 
 	parent  context.Context
-	done    chan struct{}
+	done    <-chan struct{}
 	permErr error
 }
 
@@ -44,8 +44,9 @@ func NewIdleTracker(parent context.Context, patience time.Duration) *IdleTracker
 		patience = 15 * time.Minute
 	}
 	t := time.NewTimer(patience)
+	doneChan := make(chan struct{})
 	i := &IdleTracker{
-		done:     make(chan struct{}),
+		done:     doneChan,
 		dangling: make(map[net.Conn]struct{}),
 		patience: patience,
 		timer:    t,
@@ -59,7 +60,7 @@ func NewIdleTracker(parent context.Context, patience time.Duration) *IdleTracker
 		go func() {
 			<-t.C
 			i.permErr = context.DeadlineExceeded
-			close(i.done)
+			close(doneChan)
 		}()
 		return i
 	}
@@ -69,7 +70,7 @@ func NewIdleTracker(parent context.Context, patience time.Duration) *IdleTracker
 		// Avoid a goroutine.
 		i.permErr = parent.Err()
 		i.deadline = time.Now()
-		close(i.done)
+		close(doneChan)
 		return i
 	default:
 	}
@@ -83,7 +84,7 @@ func NewIdleTracker(parent context.Context, patience time.Duration) *IdleTracker
 				i.permErr = context.DeadlineExceeded
 			}
 		}
-		close(i.done)
+		close(doneChan)
 	}()
 	return i
 }

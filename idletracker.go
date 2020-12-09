@@ -1,3 +1,7 @@
+// Copyright 2017 The IdleTracker Package Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 // Package idletracker contains a context that is done if a server
 // has not had active (stream) connections for some time.
 package idletracker

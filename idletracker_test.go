@@ -1,3 +1,5 @@
+// This file is released into the public domain.
+
 package idletracker_test
 
 import (

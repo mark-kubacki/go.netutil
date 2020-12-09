@@ -20,20 +20,17 @@ func Example() {
 		IdleTimeout: 2 * time.Minute,
 		ConnState:   lingerCtx.ConnState,
 	}
-
 	ln, _ := net.Listen("tcp", "[::1]:0")
-	go func() {
-		err := server.Serve(ln)
-		if err != nil && err != http.ErrServerClosed {
-			// …
-			log.Fatalf("serve.Serve: %v\n", err)
-		}
-	}()
+
 	go func() {
 		<-lingerCtx.Done()
 		server.Shutdown(ctx)
-		cancelFn()
 	}()
 
-	<-ctx.Done()
+	err := server.Serve(ln)
+	if err != nil && err != http.ErrServerClosed {
+		// …
+		log.Fatalf("serve.Serve: %v\n", err)
+	}
+	cancelFn()
 }

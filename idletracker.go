@@ -2,8 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package idletracker contains a context that is done if a server
+// Package idletracker contains a context that is done when a server
 // has not had active (stream) connections for some time.
+//
+// This can be used to stop idle services,
+// and works well in conjunction with socket-activated daemons.
 package idletracker
 
 import (
@@ -16,8 +19,9 @@ import (
 
 var _ context.Context = &IdleTracker{}
 
-// IdleTracker tells when the corresponding server has not been
-// connected to for some time. This can be used to stop idle services.
+// IdleTracker maintains a list of dangling connections and a timer.
+// It can be used in place of a Context with a deadline, to limit any
+// residual work to the lifetime of the managed server.
 type IdleTracker struct {
 	mu       sync.RWMutex
 	dangling map[net.Conn]struct{}
@@ -32,9 +36,9 @@ type IdleTracker struct {
 }
 
 // NewIdleTracker returns an instance with a running deadline timer.
-// That is, absent any original connection, the service will have a lifetime.
+// That is, even absent any original connection, the service will have a lifetime.
 //
-// Assumes that a server that has been torn down won't be revived.
+// Don't reuse this as its assumption is that a server that has been torn down won't be revived.
 func NewIdleTracker(parent context.Context, patience time.Duration) *IdleTracker {
 	if patience <= 0 {
 		patience = 15 * time.Minute
@@ -51,6 +55,7 @@ func NewIdleTracker(parent context.Context, patience time.Duration) *IdleTracker
 
 	parentDone := parent.Done()
 	if parentDone == nil {
+		// Cannot be cancelled, ever, therefore rely on our timer and skip racking up its counter.
 		go func() {
 			<-t.C
 			i.permErr = context.DeadlineExceeded
@@ -108,7 +113,7 @@ func (t *IdleTracker) ConnState(conn net.Conn, state http.ConnState) {
 }
 
 // Deadline implements the context.Context interface
-// but breaks the promise of only returining the same result.
+// but breaks the promise of always returning the same deadline.
 func (t *IdleTracker) Deadline() (deadline time.Time, ok bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()

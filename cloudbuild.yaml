@@ -1,0 +1,43 @@
+tags: ['golang']
+timeout: 180s
+
+steps:
+- name: 'mirror.gcr.io/library/golang'
+  id: 'gofmt'
+  entrypoint: 'bash'
+  args: ['-c', 'diff <(echo -n) <(gofmt -s -d $(find . -type f -name "*.go" -not -path "./_*"))']
+
+- name: 'gcr.io/blitznote/golang/ineffassign'
+  id: 'ineffassign'
+  waitFor: ['gofmt']
+  args: ['.']
+- name: 'gcr.io/blitznote/golang/golint'
+  id: 'lint'
+  waitFor: ['gofmt']
+
+- name: 'mirror.gcr.io/library/golang'
+  id: 'pilot build, amd64'
+  waitFor: ['ineffassign', 'lint']
+  env: ['GOARCH=amd64']
+  args: ['go', 'build', '.', 'errors']
+- name: 'mirror.gcr.io/library/golang'
+  id: 'pilot build, x86'
+  waitFor: ['ineffassign', 'lint']
+  env: ['GOARCH=386']
+  args: ['go', 'build', '.', 'errors']
+
+- name: 'mirror.gcr.io/library/golang'
+  id: 'test, amd64'
+  waitFor: ['pilot build, amd64']
+  env: ['GOARCH=amd64']
+  args: ['go', 'test', '-v']
+- name: 'mirror.gcr.io/library/golang'
+  id: 'test, x86'
+  waitFor: ['pilot build, x86', 'test, amd64']
+  env: ['GOARCH=386']
+  args: ['go', 'test', '-v']
+
+- name: 'mirror.gcr.io/library/golang'
+  id: 'vet'
+  waitFor: ['test, amd64', 'test, x86']
+  args: ['go', 'vet', '.']

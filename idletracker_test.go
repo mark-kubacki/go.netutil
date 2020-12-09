@@ -181,12 +181,17 @@ func TestConnectionTracking(t *testing.T) {
 		IdleTimeout: 2 * time.Minute,
 		ConnState:   i.ConnState,
 	}
-	ln, _ := net.Listen("tcp", "[::1]:0")
+	ln, err := net.Listen("tcp", "[::1]:0")
+	if err != nil {
+		ln, _ = net.Listen("tcp", "127.0.0.1:0")
+	}
 	var teardownByIdleTracker bool
+	var teardownCancel context.CancelFunc
 	go func() {
 		<-i.Done()
 		teardownByIdleTracker = true
-		tearDownCtx, _ := context.WithTimeout(parentCtx, 20*time.Millisecond)
+		tearDownCtx, c := context.WithTimeout(parentCtx, 20*time.Millisecond)
+		teardownCancel = c
 		server.Shutdown(tearDownCtx)
 	}()
 	go server.Serve(ln)
@@ -230,5 +235,8 @@ func TestConnectionTracking(t *testing.T) {
 	<-time.After(105 * time.Millisecond)
 	if !teardownByIdleTracker {
 		t.Error("IdleTracker was not done after its deadline")
+	}
+	if teardownCancel != nil {
+		teardownCancel()
 	}
 }

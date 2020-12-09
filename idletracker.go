@@ -80,9 +80,7 @@ func NewIdleTracker(parent context.Context, patience time.Duration) *IdleTracker
 		case <-parent.Done():
 			i.permErr = parent.Err()
 		case <-t.C:
-			if i.permErr != nil {
-				i.permErr = context.DeadlineExceeded
-			}
+			i.permErr = context.DeadlineExceeded
 		}
 		close(doneChan)
 	}()

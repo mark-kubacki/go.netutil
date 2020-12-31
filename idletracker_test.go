@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"sync"
@@ -16,7 +15,9 @@ import (
 	netutil "github.com/wmark/go.netutil"
 )
 
-func Example() {
+func ExampleIdleTracker() {
+	// Stops the server after 15 minutes without any connection.
+
 	ctx, cancelFn := context.WithCancel(context.Background())
 	lingerCtx := netutil.NewIdleTracker(ctx, 15*time.Minute)
 
@@ -24,18 +25,14 @@ func Example() {
 		IdleTimeout: 2 * time.Minute,
 		ConnState:   lingerCtx.ConnState,
 	}
-	ln, _ := net.Listen("tcp", "[::1]:0")
+	ln, _ := net.Listen("tcp", "localhost:0")
 
 	go func() {
 		<-lingerCtx.Done()
 		server.Shutdown(ctx)
 	}()
 
-	err := server.Serve(ln)
-	if err != nil && err != http.ErrServerClosed {
-		// …
-		log.Fatalf("serve.Serve: %v\n", err)
-	}
+	_ = server.Serve(ln)
 	cancelFn()
 }
 

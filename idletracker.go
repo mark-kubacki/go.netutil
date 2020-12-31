@@ -2,11 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package netutil contains a context that is done when a server
-// has not had active (stream) connections for some time.
-//
-// This can be used to stop idle services,
-// and works well in conjunction with socket-activated daemons.
+// Package netutil contains specialty network utilities
+// for on-prem “cloud”-like services.
 package netutil
 
 import (
@@ -19,9 +16,11 @@ import (
 
 var _ context.Context = &IdleTracker{}
 
-// IdleTracker maintains a list of dangling connections and a timer.
-// It can be used in place of a Context with a deadline, to limit any
-// residual work to the lifetime of the managed server.
+// IdleTracker is done after no new connections happened for some time.
+// This can be used to stop idle services.
+//
+// It can be used in place of a context.WithDeadline to bind any
+// lifetime/runtime of residual work to that of the server's.
 type IdleTracker struct {
 	mu       sync.RWMutex
 	dangling map[net.Conn]struct{}

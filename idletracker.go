@@ -1,13 +1,13 @@
-// Copyright 2017 The IdleTracker Package Authors. All rights reserved.
+// Copyright 2017 Mark Kubacki. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package idletracker contains a context that is done when a server
+// Package netutil contains a context that is done when a server
 // has not had active (stream) connections for some time.
 //
 // This can be used to stop idle services,
 // and works well in conjunction with socket-activated daemons.
-package idletracker
+package netutil
 
 import (
 	"context"
@@ -140,5 +140,5 @@ func (t *IdleTracker) Value(key interface{}) interface{} {
 
 // String implements the fmt.Stringer interface.
 func (*IdleTracker) String() string {
-	return "idletracker.IdleTracker"
+	return "netutil.IdleTracker"
 }

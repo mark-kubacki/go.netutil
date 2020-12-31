@@ -1,6 +1,6 @@
 # IdleTracker: Close Idle Server Instances
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/wmark/idletracker)](https://pkg.go.dev/github.com/wmark/idletracker)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/wmark/go.netutil)](https://pkg.go.dev/github.com/wmark/go.netutil)
 
 Once the `http.Server` you'd typically use this in has not received new connections
 for some time, the context `IdleTracker` implements is *done* and can be used to
@@ -15,7 +15,7 @@ An excerpt from my extended *godoc*:
 ```golang
 import (
 	"github.com/coreos/go-systemd/v22/activation"
-	"github.com/wmark/idletracker"
+	netutil "github.com/wmark/go.netutil"
 )
 
 var (
@@ -41,7 +41,7 @@ func main() {
 		}
 		ln = listeners[0]
 
-		lingerCtx := idletracker.NewIdleTracker(ctx, 15*time.Minute)
+		lingerCtx := netutil.NewIdleTracker(ctx, 15*time.Minute)
 		go func() {
 			<-lingerCtx.Done():
 			tearDownCtx, _ := context.WithTimeout(ctx, 10*time.Second)

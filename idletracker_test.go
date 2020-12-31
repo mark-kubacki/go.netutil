@@ -1,6 +1,6 @@
 // This file is released into the public domain.
 
-package idletracker_test
+package netutil_test
 
 import (
 	"context"
@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wmark/idletracker"
+	netutil "github.com/wmark/go.netutil"
 )
 
 func Example() {
 	ctx, cancelFn := context.WithCancel(context.Background())
-	lingerCtx := idletracker.NewIdleTracker(ctx, 15*time.Minute)
+	lingerCtx := netutil.NewIdleTracker(ctx, 15*time.Minute)
 
 	server := &http.Server{
 		IdleTimeout: 2 * time.Minute,
@@ -41,7 +41,7 @@ func Example() {
 
 func TestImplementsStringer(t *testing.T) {
 	parentCtx, cancelParent := context.WithCancel(context.Background())
-	i := idletracker.NewIdleTracker(parentCtx, 1*time.Second)
+	i := netutil.NewIdleTracker(parentCtx, 1*time.Second)
 	got := fmt.Sprintf("%v", i)
 	cancelParent()
 
@@ -54,7 +54,7 @@ func TestImplementsStringer(t *testing.T) {
 func TestParentPassthrough(t *testing.T) {
 	rootCtx := context.WithValue(context.Background(), "key", "foo")
 	parentCtx, cancelParent := context.WithCancel(rootCtx)
-	i := idletracker.NewIdleTracker(parentCtx, 0)
+	i := netutil.NewIdleTracker(parentCtx, 0)
 
 	if err := i.Err(); err != nil {
 		t.Errorf("A fresh IdleTracker gave an error, but shouldn: %v", err)
@@ -92,7 +92,7 @@ func TestDeadParent(t *testing.T) {
 	// Covers the path that avoids a goroutine.
 	parentCtx, cancelParent := context.WithCancel(context.Background())
 	cancelParent()
-	i := idletracker.NewIdleTracker(parentCtx, 1*time.Second)
+	i := netutil.NewIdleTracker(parentCtx, 1*time.Second)
 
 	if err := i.Err(); err != parentCtx.Err() {
 		t.Errorf("The parent has been cancelled, but IdleTracker didn't propagate its Err: %v", err)
@@ -102,7 +102,7 @@ func TestDeadParent(t *testing.T) {
 func TestEmptyCtxParent(t *testing.T) {
 	// Rules out any errors due to a 'nil' returned somewhere.
 	emptyCtx := context.Background()
-	i := idletracker.NewIdleTracker(emptyCtx, 100*time.Millisecond)
+	i := netutil.NewIdleTracker(emptyCtx, 100*time.Millisecond)
 
 	select {
 	case _, open := <-i.Done():
@@ -127,7 +127,7 @@ func TestDeadlineAspect(t *testing.T) {
 	// Rules out any errors due to a 'nil' returned somewhere.
 	parentCtx, cancelParent := context.WithCancel(context.Background())
 	defer cancelParent()
-	i := idletracker.NewIdleTracker(parentCtx, 100*time.Millisecond)
+	i := netutil.NewIdleTracker(parentCtx, 100*time.Millisecond)
 
 	d, onDeadline := i.Deadline()
 	if !onDeadline {
@@ -167,7 +167,7 @@ func TestDeadlineAspect(t *testing.T) {
 func TestConnectionTracking(t *testing.T) {
 	parentCtx, cancelParent := context.WithCancel(context.Background())
 	defer cancelParent()
-	i := idletracker.NewIdleTracker(parentCtx, 100*time.Millisecond)
+	i := netutil.NewIdleTracker(parentCtx, 100*time.Millisecond)
 
 	originalDeadline, _ := i.Deadline()
 

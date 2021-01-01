@@ -66,7 +66,7 @@ func (c *acceptedConnection) Accept() (net.Conn, error) {
 
 	sharedBlockingChan := make(chan struct{})
 	c.doneChan = sharedBlockingChan
-	return &cascadingCloser{conn, sharedBlockingChan}, nil
+	return &cascadingCloser{Conn: conn, closeChan: sharedBlockingChan}, nil
 }
 
 func (c *acceptedConnection) tailWaitUntilFirstIsDone() (net.Conn, error) {
@@ -88,19 +88,19 @@ func (c *acceptedConnection) Close() error {
 type cascadingCloser struct {
 	net.Conn
 
-	closeChan chan struct{}
+	mu        sync.Mutex
+	closeChan chan<- struct{}
 }
 
 // Close implements the net.Conn interface.
 func (c *cascadingCloser) Close() error {
-	// Elaborate check because the underlying connection might've been closed sooner.
-	select {
-	case _, open := <-c.closeChan:
-		if open {
-			close(c.closeChan)
-		}
-	default:
-		close(c.closeChan)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.closeChan == nil {
+		return nil
 	}
+
+	close(c.closeChan)
+	c.closeChan = nil
 	return c.Conn.Close()
 }

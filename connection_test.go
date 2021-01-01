@@ -5,7 +5,6 @@ package netutil_test
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -21,7 +20,7 @@ import (
 
 func ExampleAcceptedConnection() {
 	// Upgrades the connection to a net.Listener,
-	// in case of socket- or connection-activated services.
+	// like in socket- or connection-activated services.
 
 	var ln net.Listener
 	if _, acceptedConn := os.LookupEnv("LISTEN_FDS"); acceptedConn {
@@ -53,7 +52,7 @@ func TestAcceptedConnection(t *testing.T) {
 	}
 	defer listener.Close()
 
-	responseText := "response text"
+	const responseText = "response text"
 	var requestsServed int
 	var ln net.Listener
 	var server *http.Server
@@ -62,7 +61,7 @@ func TestAcceptedConnection(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		// Accept a single connection to get its FD, like systemd passed it.
+		// Accept a single connection to get its FD, as if systemd passed it.
 		c, err := listener.Accept()
 		if err != nil {
 			t.Fatalf("net.Accept: %v\n", err)
@@ -71,7 +70,7 @@ func TestAcceptedConnection(t *testing.T) {
 		f, _ := tcpConn.File()
 		t.Logf("Accepted: %v, %v, %v\n", tcpConn, ok, f.Fd())
 
-		// Now promote to our one-shot listener to emulate the typical use-case.
+		// Now emulate the typical use-case.
 		ln, err = netutil.AcceptedConnection(f)
 		if err != nil {
 			t.Fatalf("netutil.AcceptedConnection: %v\n", err)
@@ -81,7 +80,7 @@ func TestAcceptedConnection(t *testing.T) {
 		mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 			requestsServed++
 			w.Header().Set("Connection", "close")
-			fmt.Fprint(w, responseText)
+			w.Write([]byte(responseText))
 		})
 		server = &http.Server{Handler: mux, IdleTimeout: 4 * time.Second}
 		switch err := server.Serve(ln); err {
